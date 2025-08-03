@@ -16,14 +16,14 @@ export class AuthService {
       data: { email, deviceId, token, expiresAt },
     });
 
-    const link = \`\${process.env.FRONTEND_REDIRECT_URL}?token=\${token}\`;
+    const link = `${process.env.FRONTEND_REDIRECT_URL}?token=${token}`;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
       to: email,
       subject: 'Your Magic Link',
-      html: \`<p>Click <a href="\${link}">here</a> to log in.</p>\`,
-    });
+      html: `<p>Click <a href="${link}">here</a> to log in.</p>`,
+    });;
 
     return { success: true };
   }
