@@ -7,12 +7,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Property {
+  id         String      @id @default(uuid())
+  code       String      @unique    // 6-character alphanumeric
+  email      String
+  name       String?
+  createdAt  DateTime    @default(now())
+  magicLinks MagicLink[]
+  employees  Employee[]
+}
+
 model MagicLink {
-  id        String   @id @default(uuid())
-  email     String
-  deviceId  String
-  token     String   @unique
-  verified  Boolean  @default(false)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id         String      @id @default(uuid())
+  token      String      @unique
+  deviceId   String
+  verified   Boolean     @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime    @default(now())
+
+  // Relations
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id])
+}
+
+model Employee {
+  id         String      @id @default(uuid())
+  name       String
+  passcode   String      // 4-digit code (e.g., last 4 of SSN)
+
+  // Relations
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id])
+  clockLogs  ClockLog[]
+}
+
+model ClockLog {
+  id         String      @id @default(uuid())
+  type       ClockType
+  timestamp  DateTime    @default(now())
+
+  // Relations
+  employeeId String
+  employee   Employee     @relation(fields: [employeeId], references: [id])
+}
+
+enum ClockType {
+  IN
+  OUT
 }

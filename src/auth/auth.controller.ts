@@ -6,8 +6,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('request-magic-link')
-  requestLink(@Body() body: { email: string; deviceId: string }) {
-    return this.authService.sendMagicLink(body.email, body.deviceId);
+  requestLink(@Body() body: { propertyId: string, deviceId: string }) {
+    return this.authService.sendMagicLink(body.propertyId, body.deviceId);
   }
 
   @Get('verify')

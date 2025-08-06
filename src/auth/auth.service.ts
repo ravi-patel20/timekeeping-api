@@ -8,22 +8,33 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class AuthService {
-  async sendMagicLink(email: string, deviceId: string) {
+  async sendMagicLink(propertyId: string, deviceId: string) {
+    const property = await prisma.property.findUnique({
+      where: { code: propertyId },
+    });
+
+    if (!property) throw new Error('Invalid property ID');
+
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await prisma.magicLink.create({
-      data: { email, deviceId, token, expiresAt },
+      data: {
+        propertyId: property.id,
+        deviceId,
+        token,
+        expiresAt,
+      },
     });
 
     const link = `${process.env.FRONTEND_REDIRECT_URL}?token=${token}`;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
-      to: email,
-      subject: 'Your Magic Link',
+      to: property.email,
+      subject: 'Your Clock-In Login Link',
       html: `<p>Click <a href="${link}">here</a> to log in.</p>`,
-    });;
+    });
 
     return { success: true };
   }
@@ -49,7 +60,6 @@ export class AuthService {
     });
 
     if (!latest) return { verified: false };
-
     return { verified: latest.verified };
   }
 }
