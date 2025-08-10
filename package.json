@@ -14,10 +14,12 @@
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
     "@prisma/client": "^6.13.0",
+    "date-fns": "^4.1.0",
     "resend": "^4.7.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
+    "@types/date-fns": "^2.5.3",
     "prisma": "^6.13.0",
     "typescript": "^5.0.0"
   }

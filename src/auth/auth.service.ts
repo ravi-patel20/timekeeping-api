@@ -27,13 +27,18 @@ export class AuthService {
       },
     });
 
-    const link = `${process.env.FRONTEND_REDIRECT_URL}?token=${token}`;
+    const link = `${process.env.MAGIC_LINK_SUCCESS_BASE_URL}?token=${token}`;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
       to: property.email,
       subject: 'Your Clock-In Login Link',
       html: `<p>Click <a href="${link}">here</a> to log in.</p>`,
+    }).then((data) => {
+      console.log('Email sent:', data);
+      console.log('Magic link sent successfully');
+    }).catch((error) => {
+      console.error('Error sending magic link:', error);
     });
 
     return { success: true };
