@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -11,12 +12,34 @@ export class AuthController {
   }
 
   @Get('verify')
-  verify(@Query('token') token: string) {
-    return this.authService.verifyToken(token);
+  async verify(@Query('token') token: string, @Res() res: Response) {
+    const result = await this.authService.verifyToken(token);
+    const redirectBase = process.env.FRONTEND_REDIRECT_URL;
+    if (redirectBase) {
+      const sep = redirectBase.includes('?') ? '&' : '?';
+      const url = `${redirectBase}${sep}verified=${result.verified ? 'true' : 'false'}`;
+      return res.redirect(url);
+    }
+    return res.json(result);
   }
 
   @Get('poll-status')
-  poll(@Query('deviceId') deviceId: string) {
-    return this.authService.checkVerification(deviceId);
+  async poll(@Query('deviceId') deviceId: string, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.checkVerification(deviceId);
+
+    if (result.verified && result.token && result.expiresAt) {
+      const expiresAt = new Date(result.expiresAt);
+      const isProd = process.env.NODE_ENV === 'production';
+      res.cookie('device_session', result.token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        expires: expiresAt,
+        // domain: process.env.COOKIE_DOMAIN, // optionally set via env if needed
+        path: '/',
+      });
+    }
+
+    return result;
   }
 }

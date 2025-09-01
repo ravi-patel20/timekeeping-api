@@ -6,17 +6,13 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class ClockService {
-  async clock(deviceId: string, passcode: string) {
-    const link = await prisma.magicLink.findFirst({
-      where: { deviceId, verified: true },
-      include: { property: true },
-    });
-
-    if (!link) return null;
+  async clockWithSession(sessionToken: string | undefined, passcode: string) {
+    const propertyId = await this.propertyIdFromSession(sessionToken);
+    if (!propertyId) return null;
 
     const employee = await prisma.employee.findFirst({
       where: {
-        propertyId: link.propertyId,
+        propertyId,
         passcode,
       },
     });
@@ -42,17 +38,13 @@ export class ClockService {
     return { success: true, type: log.type, timestamp: log.timestamp, hoursWorked };
   }
 
-  async getStatus(deviceId: string, passcode: string) {
-    const link = await prisma.magicLink.findFirst({
-      where: { deviceId, verified: true },
-      include: { property: true },
-    });
-
-    if (!link) return null;
+  async getStatusWithSession(sessionToken: string | undefined, passcode: string) {
+    const propertyId = await this.propertyIdFromSession(sessionToken);
+    if (!propertyId) return null;
 
     const employee = await prisma.employee.findFirst({
       where: {
-        propertyId: link.propertyId,
+        propertyId,
         passcode,
       },
     });
@@ -93,5 +85,16 @@ export class ClockService {
     }
 
     return totalHours;
+  }
+
+  private async propertyIdFromSession(sessionToken: string | undefined): Promise<string | null> {
+    if (!sessionToken) return null;
+    const session = await prisma.deviceSession.findFirst({
+      where: {
+        token: sessionToken,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    return session?.propertyId ?? null;
   }
 }

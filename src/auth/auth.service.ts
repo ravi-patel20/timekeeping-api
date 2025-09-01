@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class AuthService {
+  private readonly sessionTtlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+
   async sendMagicLink(propertyId: string, deviceId: string) {
     const property = await prisma.property.findUnique({
       where: { code: propertyId },
@@ -64,7 +66,34 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!latest) return { verified: false };
-    return { verified: latest.verified };
+    if (!latest || !latest.verified) return { verified: false };
+
+    // Create or reuse a device session for this device/property
+    const now = new Date();
+    let session = await prisma.deviceSession.findFirst({
+      where: {
+        deviceId,
+        propertyId: latest.propertyId,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!session) {
+      session = await prisma.deviceSession.create({
+        data: {
+          token: randomUUID(),
+          deviceId,
+          propertyId: latest.propertyId,
+          expiresAt: new Date(Date.now() + this.sessionTtlMs),
+        },
+      });
+    }
+
+    return {
+      verified: true,
+      token: session.token,
+      expiresAt: session.expiresAt,
+    };
   }
 }

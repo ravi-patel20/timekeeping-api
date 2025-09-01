@@ -39,6 +39,9 @@ model Employee {
   propertyId String
   property   Property     @relation(fields: [propertyId], references: [id])
   clockLogs  ClockLog[]
+
+  // Ensure passcodes are unique per property
+  @@unique([propertyId, passcode])
 }
 
 model ClockLog {
@@ -54,4 +57,14 @@ model ClockLog {
 enum ClockType {
   IN
   OUT
+}
+
+// Session issued to a device after magic link verification
+model DeviceSession {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  deviceId   String
+  propertyId String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 }
