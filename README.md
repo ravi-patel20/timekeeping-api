@@ -46,3 +46,12 @@
   "passcode": "1234"
 }
 ```
+
+### GET /auth/poll-status
+- Query: `deviceId`
+- Returns `verified` status. On success, sets a `device_session` cookie and returns `token` and `expiresAt`.
+
+## Configuration
+
+- `FRONTEND_REDIRECT_URL`: used by `/auth/verify` to redirect after clicking magic link.
+- `MAGIC_LINK_SUCCESS_BASE_URL`: base URL used to construct the email verification link.
