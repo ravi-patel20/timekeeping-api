@@ -49,4 +49,23 @@ export class AuthController {
     const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
     return this.authService.getSession(token);
   }
+
+  @Get('logout')
+  async logout(@Req() req: Request, @Res() res: Response) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    await this.authService.revokeSession(token);
+
+    const isProd = process.env.NODE_ENV === 'production';
+    // Clear cookie by setting it expired with same important attributes
+    res.clearCookie('device_session', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+    });
+
+    const base = process.env.FRONTEND_LOGOUT_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:8080';
+    const redirectTo = base.includes('http') ? `${base.replace(/\/$/, '')}/property/login` : `http://localhost:8080/property/login`;
+    return res.redirect(redirectTo);
+  }
 }

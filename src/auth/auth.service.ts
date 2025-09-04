@@ -113,4 +113,14 @@ export class AuthService {
       expiresAt: session.expiresAt,
     };
   }
+
+  async revokeSession(sessionToken: string | undefined) {
+    if (!sessionToken) return { revoked: false };
+    try {
+      await prisma.deviceSession.deleteMany({ where: { token: sessionToken } });
+      return { revoked: true };
+    } catch {
+      return { revoked: false };
+    }
+  }
 }
