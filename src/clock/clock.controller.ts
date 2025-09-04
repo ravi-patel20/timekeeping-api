@@ -37,4 +37,12 @@ export class ClockController {
     if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
     return result;
   }
+
+  @Post('logs')
+  async getTodayLogs(@Body() body: { passcode: string }, @Req() req: Request) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    const result = await this.clockService.getTodayLogsWithSession(token, body.passcode);
+    if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
+    return result;
+  }
 }

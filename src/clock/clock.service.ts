@@ -104,6 +104,31 @@ export class ClockService {
     return { nextAction, hoursWorked, currentStatus };
   }
 
+  async getTodayLogsWithSession(sessionToken: string | undefined, passcode: string) {
+    const propertyId = await this.propertyIdFromSession(sessionToken);
+    if (!propertyId) return null;
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        propertyId,
+        passcode,
+      },
+    });
+
+    if (!employee) return null;
+
+    const start = startOfDay(new Date());
+    const logs = await prisma.clockLog.findMany({
+      where: {
+        employeeId: employee.id,
+        timestamp: { gte: start },
+      },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    return logs.map(l => ({ id: l.id, type: l.type, timestamp: l.timestamp }));
+  }
+
   private async calculateHoursWorked(employeeId: string): Promise<number> {
     const startOfToday = startOfDay(new Date());
 
