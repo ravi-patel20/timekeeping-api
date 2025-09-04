@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Query, Body, Res } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -41,5 +42,11 @@ export class AuthController {
     }
 
     return result;
+  }
+
+  @Get('session')
+  async session(@Req() req: Request) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    return this.authService.getSession(token);
   }
 }

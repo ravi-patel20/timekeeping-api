@@ -96,4 +96,21 @@ export class AuthService {
       expiresAt: session.expiresAt,
     };
   }
+
+  async getSession(sessionToken: string | undefined) {
+    if (!sessionToken) return { active: false };
+    const now = new Date();
+    const session = await prisma.deviceSession.findFirst({
+      where: { token: sessionToken, expiresAt: { gt: now } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!session) return { active: false };
+    const property = await prisma.property.findUnique({ where: { id: session.propertyId } });
+    return {
+      active: true,
+      propertyId: session.propertyId,
+      propertyCode: property?.code,
+      expiresAt: session.expiresAt,
+    };
+  }
 }
