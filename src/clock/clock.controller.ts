@@ -14,6 +14,22 @@ export class ClockController {
     return result;
   }
 
+  @Post('in')
+  async clockIn(@Body() body: { passcode: string }, @Req() req: Request) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    const result = await this.clockService.clockActionWithSession(token, body.passcode, 'IN');
+    if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
+    return result;
+  }
+
+  @Post('out')
+  async clockOut(@Body() body: { passcode: string }, @Req() req: Request) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    const result = await this.clockService.clockActionWithSession(token, body.passcode, 'OUT');
+    if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
+    return result;
+  }
+
   @Post('status')
   async getStatus(@Body() body: { deviceId?: string, passcode: string }, @Req() req: Request) {
     const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);

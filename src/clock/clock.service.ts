@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaClient, ClockType } from '@prisma/client';
 import { startOfDay } from 'date-fns';
 
@@ -6,6 +6,47 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class ClockService {
+  async clockActionWithSession(sessionToken: string | undefined, passcode: string, action: 'IN' | 'OUT') {
+    const propertyId = await this.propertyIdFromSession(sessionToken);
+    if (!propertyId) return null;
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        propertyId,
+        passcode,
+      },
+    });
+
+    if (!employee) return null;
+
+    const lastLog = await prisma.clockLog.findFirst({
+      where: { employeeId: employee.id },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    // Validation: prevent duplicate actions and out-before-in
+    if (action === 'IN') {
+      if (lastLog?.type === 'IN') {
+        throw new BadRequestException('Already clocked in. Please clock out first.');
+      }
+    } else if (action === 'OUT') {
+      if (!lastLog || lastLog.type !== 'IN') {
+        throw new BadRequestException('Cannot clock out before clocking in.');
+      }
+    }
+
+    const log = await prisma.clockLog.create({
+      data: {
+        employeeId: employee.id,
+        type: action as ClockType,
+      },
+    });
+
+    const hoursWorked = await this.calculateHoursWorked(employee.id);
+
+    return { success: true, type: log.type, timestamp: log.timestamp, hoursWorked };
+  }
+
   async clockWithSession(sessionToken: string | undefined, passcode: string) {
     const propertyId = await this.propertyIdFromSession(sessionToken);
     if (!propertyId) return null;
@@ -57,9 +98,10 @@ export class ClockService {
     });
 
     const nextAction = lastLog?.type === 'IN' ? 'Clock Out' : 'Clock In';
+    const currentStatus = lastLog?.type ?? 'OUT';
     const hoursWorked = await this.calculateHoursWorked(employee.id);
 
-    return { nextAction, hoursWorked };
+    return { nextAction, hoursWorked, currentStatus };
   }
 
   private async calculateHoursWorked(employeeId: string): Promise<number> {

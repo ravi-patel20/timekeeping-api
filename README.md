@@ -47,6 +47,31 @@
 }
 ```
 
+### POST /clock/in
+```json
+{
+  "passcode": "1234"
+}
+```
+
+### POST /clock/out
+```json
+{
+  "passcode": "1234"
+}
+```
+
+### POST /clock/status
+```json
+{
+  "passcode": "1234"
+}
+```
+- Response includes:
+  - `nextAction`: "Clock In" or "Clock Out"
+  - `currentStatus`: "IN" or "OUT"
+  - `hoursWorked`: number of hours worked today
+
 ### GET /auth/poll-status
 - Query: `deviceId`
 - Returns `verified` status. On success, sets a `device_session` cookie and returns `token` and `expiresAt`.
