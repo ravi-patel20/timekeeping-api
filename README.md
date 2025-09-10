@@ -26,10 +26,23 @@
 
 - Property ID: `ABC123`
 - Property Email: `property@example.com`
-- Employee 1: John Doe, Passcode: `1234`
+- Employee 1: John Doe, Passcode: `1234`, isAdmin: `true`
 - Employee 2: Jane Smith, Passcode: `5678`
 
 ## Endpoints
+
+### POST /auth/identify-employee
+Identify an employee by passcode for the current device session (property-bound) and return whether they are an admin.
+
+Request:
+```json
+{ "passcode": "1234" }
+```
+
+Response:
+```json
+{ "employeeId": "...", "name": "John Doe", "isAdmin": true }
+```
 
 ### POST /auth/request-magic-link
 ```json

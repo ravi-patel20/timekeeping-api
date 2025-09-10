@@ -123,4 +123,24 @@ export class AuthService {
       return { revoked: false };
     }
   }
+
+  async identifyEmployee(sessionToken: string | undefined, passcode: string) {
+    if (!sessionToken) return null;
+    const now = new Date();
+    const session = await prisma.deviceSession.findFirst({
+      where: { token: sessionToken, expiresAt: { gt: now } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!session) return null;
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        propertyId: session.propertyId,
+        passcode,
+      },
+    });
+    if (!employee) return null;
+
+    return { employeeId: employee.id, name: employee.name, isAdmin: (employee as any).isAdmin ?? false };
+  }
 }

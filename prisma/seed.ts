@@ -15,11 +15,12 @@ async function main() {
 
   await prisma.employee.upsert({
     where: { propertyId_passcode: { propertyId: property.id, passcode: '1234' } },
-    update: { name: 'John Doe' },
+    update: { name: 'John Doe', isAdmin: true },
     create: {
       name: 'John Doe',
       passcode: '1234',
       propertyId: property.id,
+      isAdmin: true,
     },
   });
 

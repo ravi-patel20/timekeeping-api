@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Res, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res, Req, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -48,6 +48,14 @@ export class AuthController {
   async session(@Req() req: Request) {
     const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
     return this.authService.getSession(token);
+  }
+
+  @Post('identify-employee')
+  async identifyEmployee(@Body() body: { passcode: string }, @Req() req: Request) {
+    const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
+    const result = await this.authService.identifyEmployee(token, body.passcode);
+    if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
+    return result;
   }
 
   @Get('logout')
