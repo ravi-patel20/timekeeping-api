@@ -10,14 +10,50 @@ export class EmployeesService {
       where: { propertyId },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         isAdmin: true,
         email: true,
         phone: true,
         payType: true,
         status: true,
       },
-      orderBy: { name: 'asc' },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
+  }
+
+  async createForProperty(propertyId: string, data: {
+    firstName: string;
+    lastName: string;
+    passcode: string;
+    email?: string | null;
+    phone?: string | null;
+    payType?: string | null;
+    status?: string | null;
+  }) {
+    const employee = await prisma.employee.create({
+      data: {
+        propertyId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        passcode: data.passcode,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        payType: data.payType ?? 'hourly',
+        status: data.status ?? 'active',
+        isAdmin: false,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        payType: true,
+        status: true,
+        isAdmin: true,
+      },
+    });
+    return employee;
   }
 }

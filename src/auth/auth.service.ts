@@ -154,13 +154,17 @@ export class AuthService {
       });
       return {
         employeeId: employee.id,
-        name: employee.name,
+        name: `${employee.firstName} ${employee.lastName}`.trim(),
         isAdmin: true,
         adminToken: admin.token,
         adminExpiresAt: admin.expiresAt,
       };
     }
 
-    return { employeeId: employee.id, name: employee.name, isAdmin: false };
+    return {
+      employeeId: employee.id,
+      name: `${employee.firstName} ${employee.lastName}`.trim(),
+      isAdmin: false,
+    };
   }
 }

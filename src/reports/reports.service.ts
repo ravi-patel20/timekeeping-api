@@ -11,6 +11,8 @@ export interface EmployeeClockEntryDto {
 
 export interface EmployeeHoursSummary {
   id: string;
+  firstName: string;
+  lastName: string;
   name: string;
   isAdmin: boolean;
   totalHours: number;
@@ -91,22 +93,27 @@ export class ReportsService {
       where: { propertyId },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         isAdmin: true,
         email: true,
         phone: true,
         payType: true,
         status: true,
       },
-      orderBy: { name: 'asc' },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
 
     const results: EmployeeHoursSummary[] = [];
     for (const e of employees) {
       const { hours, logs } = await this.calculateHoursAndLogsInRange(e.id, start, end);
+      const firstName = e.firstName;
+      const lastName = e.lastName;
       results.push({
         id: e.id,
-        name: e.name,
+        firstName,
+        lastName,
+        name: `${firstName} ${lastName}`.trim(),
         isAdmin: e.isAdmin,
         totalHours: Number(hours.toFixed(2)),
         clockEntries: logs,

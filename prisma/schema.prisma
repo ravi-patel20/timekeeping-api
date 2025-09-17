@@ -32,7 +32,8 @@ model MagicLink {
 
 model Employee {
   id         String      @id @default(uuid())
-  name       String
+  firstName  String
+  lastName   String
   passcode   String      // 4-digit code (e.g., last 4 of SSN)
   isAdmin    Boolean     @default(false)
   email      String?
