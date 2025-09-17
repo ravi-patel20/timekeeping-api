@@ -8,6 +8,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_ORIGIN || 'http://localhost:8080',
     credentials: true, // allow cookies/credentials
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   await app.listen(3000);
 }

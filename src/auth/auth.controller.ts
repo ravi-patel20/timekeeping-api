@@ -51,10 +51,22 @@ export class AuthController {
   }
 
   @Post('identify-employee')
-  async identifyEmployee(@Body() body: { passcode: string }, @Req() req: Request) {
+  async identifyEmployee(@Body() body: { passcode: string }, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = (req.cookies?.device_session) || (req.headers['authorization']?.toString().startsWith('Bearer ') ? req.headers['authorization']!.toString().slice(7) : undefined);
     const result = await this.authService.identifyEmployee(token, body.passcode);
     if (!result) throw new UnauthorizedException('Unauthorized or Invalid Passcode');
+
+    if ((result as any).isAdmin && (result as any).adminToken && (result as any).adminExpiresAt) {
+      const isProd = process.env.NODE_ENV === 'production';
+      res.cookie('admin_session', (result as any).adminToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        expires: new Date((result as any).adminExpiresAt),
+        path: '/',
+      });
+    }
+
     return result;
   }
 
@@ -66,6 +78,12 @@ export class AuthController {
     const isProd = process.env.NODE_ENV === 'production';
     // Clear cookie by setting it expired with same important attributes
     res.clearCookie('device_session', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+    });
+    res.clearCookie('admin_session', {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',

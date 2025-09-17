@@ -35,6 +35,10 @@ model Employee {
   name       String
   passcode   String      // 4-digit code (e.g., last 4 of SSN)
   isAdmin    Boolean     @default(false)
+  email      String?
+  phone      String?
+  payType    String      @default("hourly")
+  status     String      @default("active")
 
   // Relations
   propertyId String
@@ -68,4 +72,14 @@ model DeviceSession {
   propertyId String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
+}
+
+// Admin session issued after admin identification to avoid sending passcode repeatedly
+model AdminSession {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  propertyId  String
+  employeeId  String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 }

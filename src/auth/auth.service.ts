@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 @Injectable()
 export class AuthService {
   private readonly sessionTtlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+  private readonly adminSessionTtlMs = 12 * 60 * 60 * 1000; // 12 hours
 
   async sendMagicLink(propertyId: string, deviceId: string) {
     const property = await prisma.property.findUnique({
@@ -141,6 +142,25 @@ export class AuthService {
     });
     if (!employee) return null;
 
-    return { employeeId: employee.id, name: employee.name, isAdmin: (employee as any).isAdmin ?? false };
+    if ((employee as any).isAdmin) {
+      // Create admin session to avoid repeatedly sending passcode
+      const admin = await prisma.adminSession.create({
+        data: {
+          token: randomUUID(),
+          propertyId: session.propertyId,
+          employeeId: employee.id,
+          expiresAt: new Date(Date.now() + this.adminSessionTtlMs),
+        },
+      });
+      return {
+        employeeId: employee.id,
+        name: employee.name,
+        isAdmin: true,
+        adminToken: admin.token,
+        adminExpiresAt: admin.expiresAt,
+      };
+    }
+
+    return { employeeId: employee.id, name: employee.name, isAdmin: false };
   }
 }
