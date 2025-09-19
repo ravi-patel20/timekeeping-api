@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -55,5 +55,52 @@ export class EmployeesService {
       },
     });
     return employee;
+  }
+
+  async updateForProperty(
+    propertyId: string,
+    employeeId: string,
+    data: {
+      firstName?: string | null;
+      lastName?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      payType?: string | null;
+      status?: string | null;
+    },
+  ) {
+    const existing = await prisma.employee.findFirst({
+      where: { id: employeeId, propertyId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const updateData: Record<string, any> = {};
+
+    if (data.firstName !== undefined) updateData.firstName = data.firstName ?? existing.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName ?? existing.lastName;
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.payType !== undefined) updateData.payType = data.payType || existing.payType;
+    if (data.status !== undefined) updateData.status = data.status || existing.status;
+
+    const updated = await prisma.employee.update({
+      where: { id: employeeId },
+      data: updateData,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        payType: true,
+        status: true,
+        isAdmin: true,
+      },
+    });
+
+    return updated;
   }
 }
