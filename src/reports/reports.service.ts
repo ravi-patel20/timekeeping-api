@@ -20,7 +20,16 @@ export interface EmployeeHoursSummary {
   email: string | null;
   phone: string | null;
   payType: string;
+  payAmountCents: number | null;
   status: string;
+  payHistory: EmployeePayHistoryEntry[];
+}
+
+export interface EmployeePayHistoryEntry {
+  id: string;
+  amountCents: number | null;
+  effectiveAt: Date;
+  createdAt: Date;
 }
 
 @Injectable()
@@ -99,7 +108,17 @@ export class ReportsService {
         email: true,
         phone: true,
         payType: true,
+        payAmountCents: true,
         status: true,
+        payHistory: {
+          select: {
+            id: true,
+            amountCents: true,
+            effectiveAt: true,
+            createdAt: true,
+          },
+          orderBy: { effectiveAt: 'desc' },
+        },
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
@@ -120,7 +139,9 @@ export class ReportsService {
         email: e.email ?? null,
         phone: e.phone ?? null,
         payType: e.payType,
+        payAmountCents: e.payAmountCents ?? null,
         status: e.status,
+        payHistory: e.payHistory,
       });
     }
     return results;

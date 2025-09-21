@@ -3,6 +3,30 @@ import { Request } from 'express';
 import { EmployeesService } from './employees.service';
 import { AdminAuthService } from '../common/admin-auth.service';
 
+const parsePayAmountToCents = (value: unknown): number | null | undefined => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new BadRequestException('payAmount must be a valid number');
+    }
+    return Math.round(value * 100);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const numeric = Number(trimmed.replace(/[$,]/g, ''));
+    if (!Number.isFinite(numeric)) {
+      throw new BadRequestException('payAmount must be a valid number');
+    }
+    return Math.round(numeric * 100);
+  }
+
+  throw new BadRequestException('payAmount must be a number');
+};
+
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService, private readonly adminAuth: AdminAuthService) {}
@@ -26,6 +50,7 @@ export class EmployeesController {
       phone?: string;
       payType?: string;
       status?: string;
+      payAmount?: number | string | null;
     },
   ) {
     const deviceToken = req.cookies?.device_session;
@@ -51,6 +76,7 @@ export class EmployeesController {
       phone: body.phone?.trim() || null,
       payType: body.payType?.trim().toLowerCase() || null,
       status: body.status?.trim().toLowerCase() || null,
+      payAmountCents: parsePayAmountToCents(body.payAmount),
     });
 
     return employee;
@@ -67,6 +93,7 @@ export class EmployeesController {
       phone?: string;
       payType?: string;
       status?: string;
+      payAmount?: number | string | null;
     },
   ) {
     const deviceToken = req.cookies?.device_session;
@@ -80,6 +107,7 @@ export class EmployeesController {
       phone: body.phone?.trim(),
       payType: body.payType?.trim().toLowerCase(),
       status: body.status?.trim().toLowerCase(),
+      payAmountCents: parsePayAmountToCents(body.payAmount),
     };
 
     if (normalized.payType && !['hourly', 'weekly', 'annually'].includes(normalized.payType)) {

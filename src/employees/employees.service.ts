@@ -16,6 +16,7 @@ export class EmployeesService {
         email: true,
         phone: true,
         payType: true,
+        payAmountCents: true,
         status: true,
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
@@ -30,30 +31,61 @@ export class EmployeesService {
     phone?: string | null;
     payType?: string | null;
     status?: string | null;
+    payAmountCents?: number | null;
   }) {
-    const employee = await prisma.employee.create({
-      data: {
-        propertyId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        passcode: data.passcode,
-        email: data.email ?? null,
-        phone: data.phone ?? null,
-        payType: data.payType ?? 'hourly',
-        status: data.status ?? 'active',
-        isAdmin: false,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        payType: true,
-        status: true,
-        isAdmin: true,
-      },
+    const employee = await prisma.$transaction(async (tx) => {
+      const created = await tx.employee.create({
+        data: {
+          propertyId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          passcode: data.passcode,
+          email: data.email ?? null,
+          phone: data.phone ?? null,
+          payType: data.payType ?? 'hourly',
+          payAmountCents: data.payAmountCents ?? null,
+          status: data.status ?? 'active',
+          isAdmin: false,
+        },
+        select: { id: true },
+      });
+
+      if (data.payAmountCents !== undefined && data.payAmountCents !== null) {
+        await tx.employeePayHistory.create({
+          data: {
+            employeeId: created.id,
+            amountCents: data.payAmountCents ?? null,
+          },
+        });
+      }
+
+      const full = await tx.employee.findUnique({
+        where: { id: created.id },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          payType: true,
+          payAmountCents: true,
+          status: true,
+          isAdmin: true,
+          payHistory: {
+            select: {
+              id: true,
+              amountCents: true,
+              effectiveAt: true,
+              createdAt: true,
+            },
+            orderBy: { effectiveAt: 'desc' },
+          },
+        },
+      });
+
+      return full!;
     });
+
     return employee;
   }
 
@@ -67,6 +99,7 @@ export class EmployeesService {
       phone?: string | null;
       payType?: string | null;
       status?: string | null;
+      payAmountCents?: number | null;
     },
   ) {
     const existing = await prisma.employee.findFirst({
@@ -85,20 +118,57 @@ export class EmployeesService {
     if (data.phone !== undefined) updateData.phone = data.phone || null;
     if (data.payType !== undefined) updateData.payType = data.payType || existing.payType;
     if (data.status !== undefined) updateData.status = data.status || existing.status;
+    let payAmountChanged = false;
+    if (data.payAmountCents !== undefined) {
+      const normalized = data.payAmountCents ?? null;
+      if (normalized !== existing.payAmountCents) {
+        updateData.payAmountCents = normalized;
+        payAmountChanged = true;
+      }
+    }
 
-    const updated = await prisma.employee.update({
-      where: { id: employeeId },
-      data: updateData,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        payType: true,
-        status: true,
-        isAdmin: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      if (Object.keys(updateData).length > 0) {
+        await tx.employee.update({
+          where: { id: employeeId },
+          data: updateData,
+        });
+      }
+
+      if (payAmountChanged) {
+        await tx.employeePayHistory.create({
+          data: {
+            employeeId,
+            amountCents: updateData.payAmountCents ?? null,
+          },
+        });
+      }
+
+      const full = await tx.employee.findUnique({
+        where: { id: employeeId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          payType: true,
+          payAmountCents: true,
+          status: true,
+          isAdmin: true,
+          payHistory: {
+            select: {
+              id: true,
+              amountCents: true,
+              effectiveAt: true,
+              createdAt: true,
+            },
+            orderBy: { effectiveAt: 'desc' },
+          },
+        },
+      });
+
+      return full!;
     });
 
     return updated;

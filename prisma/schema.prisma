@@ -39,12 +39,14 @@ model Employee {
   email      String?
   phone      String?
   payType    String      @default("hourly")
+  payAmountCents Int?
   status     String      @default("active")
 
   // Relations
   propertyId String
   property   Property     @relation(fields: [propertyId], references: [id])
   clockLogs  ClockLog[]
+  payHistory EmployeePayHistory[]
 
   // Ensure passcodes are unique per property
   @@unique([propertyId, passcode])
@@ -73,6 +75,17 @@ model DeviceSession {
   propertyId String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
+}
+
+model EmployeePayHistory {
+  id           String    @id @default(uuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  amountCents  Int?
+  effectiveAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([employeeId, effectiveAt])
 }
 
 // Admin session issued after admin identification to avoid sending passcode repeatedly
