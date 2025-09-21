@@ -34,6 +34,8 @@ export class EmployeesService {
     payAmountCents?: number | null;
   }) {
     const employee = await prisma.$transaction(async (tx) => {
+      const initialPayType = data.payType ?? 'hourly';
+
       const created = await tx.employee.create({
         data: {
           propertyId,
@@ -42,7 +44,7 @@ export class EmployeesService {
           passcode: data.passcode,
           email: data.email ?? null,
           phone: data.phone ?? null,
-          payType: data.payType ?? 'hourly',
+          payType: initialPayType,
           payAmountCents: data.payAmountCents ?? null,
           status: data.status ?? 'active',
           isAdmin: false,
@@ -50,14 +52,13 @@ export class EmployeesService {
         select: { id: true },
       });
 
-      if (data.payAmountCents !== undefined && data.payAmountCents !== null) {
-        await tx.employeePayHistory.create({
-          data: {
-            employeeId: created.id,
-            amountCents: data.payAmountCents ?? null,
-          },
-        });
-      }
+      await tx.employeePayHistory.create({
+        data: {
+          employeeId: created.id,
+          amountCents: data.payAmountCents ?? null,
+          payType: initialPayType,
+        },
+      });
 
       const full = await tx.employee.findUnique({
         where: { id: created.id },
@@ -75,6 +76,7 @@ export class EmployeesService {
             select: {
               id: true,
               amountCents: true,
+              payType: true,
               effectiveAt: true,
               createdAt: true,
             },
@@ -116,15 +118,29 @@ export class EmployeesService {
     if (data.lastName !== undefined) updateData.lastName = data.lastName ?? existing.lastName;
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.phone !== undefined) updateData.phone = data.phone || null;
-    if (data.payType !== undefined) updateData.payType = data.payType || existing.payType;
     if (data.status !== undefined) updateData.status = data.status || existing.status;
+    let payTypeChanged = false;
+    let nextPayType = existing.payType;
+    if (data.payType !== undefined) {
+      const normalized = data.payType ?? existing.payType;
+      updateData.payType = normalized;
+      if (normalized !== existing.payType) {
+        payTypeChanged = true;
+      }
+      nextPayType = normalized;
+    }
     let payAmountChanged = false;
+    let nextPayAmount = existing.payAmountCents ?? null;
     if (data.payAmountCents !== undefined) {
       const normalized = data.payAmountCents ?? null;
       if (normalized !== existing.payAmountCents) {
         updateData.payAmountCents = normalized;
         payAmountChanged = true;
+        nextPayAmount = normalized;
       }
+    }
+    if (!payAmountChanged) {
+      nextPayAmount = existing.payAmountCents ?? null;
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -135,11 +151,12 @@ export class EmployeesService {
         });
       }
 
-      if (payAmountChanged) {
+      if (payAmountChanged || payTypeChanged) {
         await tx.employeePayHistory.create({
           data: {
             employeeId,
-            amountCents: updateData.payAmountCents ?? null,
+            amountCents: nextPayAmount,
+            payType: nextPayType,
           },
         });
       }
@@ -160,6 +177,7 @@ export class EmployeesService {
             select: {
               id: true,
               amountCents: true,
+              payType: true,
               effectiveAt: true,
               createdAt: true,
             },

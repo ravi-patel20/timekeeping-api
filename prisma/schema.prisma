@@ -9,65 +9,52 @@ datasource db {
 
 model Property {
   id         String      @id @default(uuid())
-  code       String      @unique    // 6-character alphanumeric
+  code       String      @unique
   email      String
   name       String?
   createdAt  DateTime    @default(now())
-  magicLinks MagicLink[]
   employees  Employee[]
+  magicLinks MagicLink[]
 }
 
 model MagicLink {
-  id         String      @id @default(uuid())
-  token      String      @unique
+  id         String   @id @default(uuid())
+  token      String   @unique
   deviceId   String
-  verified   Boolean     @default(false)
+  verified   Boolean  @default(false)
   expiresAt  DateTime
-  createdAt  DateTime    @default(now())
-
-  // Relations
+  createdAt  DateTime @default(now())
   propertyId String
-  property   Property     @relation(fields: [propertyId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
 }
 
 model Employee {
-  id         String      @id @default(uuid())
-  firstName  String
-  lastName   String
-  passcode   String      // 4-digit code (e.g., last 4 of SSN)
-  isAdmin    Boolean     @default(false)
-  email      String?
-  phone      String?
-  payType    String      @default("hourly")
+  id             String               @id @default(uuid())
+  passcode       String
+  propertyId     String
+  isAdmin        Boolean              @default(false)
+  email          String?
+  payType        String               @default("hourly")
+  phone          String?
+  status         String               @default("active")
+  firstName      String
+  lastName       String
   payAmountCents Int?
-  status     String      @default("active")
+  clockLogs      ClockLog[]
+  property       Property             @relation(fields: [propertyId], references: [id])
+  payHistory     EmployeePayHistory[]
 
-  // Relations
-  propertyId String
-  property   Property     @relation(fields: [propertyId], references: [id])
-  clockLogs  ClockLog[]
-  payHistory EmployeePayHistory[]
-
-  // Ensure passcodes are unique per property
   @@unique([propertyId, passcode])
 }
 
 model ClockLog {
-  id         String      @id @default(uuid())
+  id         String    @id @default(uuid())
   type       ClockType
-  timestamp  DateTime    @default(now())
-
-  // Relations
+  timestamp  DateTime  @default(now())
   employeeId String
-  employee   Employee     @relation(fields: [employeeId], references: [id])
+  employee   Employee  @relation(fields: [employeeId], references: [id])
 }
 
-enum ClockType {
-  IN
-  OUT
-}
-
-// Session issued to a device after magic link verification
 model DeviceSession {
   id         String   @id @default(uuid())
   token      String   @unique
@@ -78,22 +65,27 @@ model DeviceSession {
 }
 
 model EmployeePayHistory {
-  id           String    @id @default(uuid())
-  employeeId   String
-  employee     Employee  @relation(fields: [employeeId], references: [id])
-  amountCents  Int?
-  effectiveAt  DateTime  @default(now())
-  createdAt    DateTime  @default(now())
+  id          String   @id @default(uuid())
+  employeeId  String
+  amountCents Int?
+  payType     String?
+  effectiveAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId, effectiveAt])
 }
 
-// Admin session issued after admin identification to avoid sending passcode repeatedly
 model AdminSession {
-  id          String   @id @default(uuid())
-  token       String   @unique
-  propertyId  String
-  employeeId  String
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  token      String   @unique
+  propertyId String
+  employeeId String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+enum ClockType {
+  IN
+  OUT
 }

@@ -28,6 +28,7 @@ export interface EmployeeHoursSummary {
 export interface EmployeePayHistoryEntry {
   id: string;
   amountCents: number | null;
+  payType: string | null;
   effectiveAt: Date;
   createdAt: Date;
 }
@@ -114,6 +115,7 @@ export class ReportsService {
           select: {
             id: true,
             amountCents: true,
+            payType: true,
             effectiveAt: true,
             createdAt: true,
           },
