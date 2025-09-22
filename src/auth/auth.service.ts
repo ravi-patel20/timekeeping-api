@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Resend } from 'resend';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { buildMagicLinkEmail } from './templates/magic-link-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const prisma = new PrismaClient();
@@ -31,12 +32,18 @@ export class AuthService {
     });
 
     const link = `${process.env.MAGIC_LINK_SUCCESS_BASE_URL}?token=${token}`;
+    const { subject, html, text } = buildMagicLinkEmail({
+      propertyName: property.name,
+      propertyCode: property.code,
+      link,
+    });
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
       to: property.email,
-      subject: 'Your Clock-In Login Link',
-      html: `<p>Click <a href="${link}">here</a> to log in.</p>`,
+      subject,
+      html,
+      text,
     }).then((data) => {
       console.log('Email sent:', data);
       console.log('Magic link sent successfully');
