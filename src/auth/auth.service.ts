@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Resend } from 'resend';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { hashPasscode, isLegacyPasscode, verifyPasscode } from '../common/passcode.util';
 import { buildMagicLinkEmail } from './templates/magic-link-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -141,12 +142,7 @@ export class AuthService {
     });
     if (!session) return null;
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        propertyId: session.propertyId,
-        passcode,
-      },
-    });
+    const employee = await this.findEmployeeByPasscode(session.propertyId, passcode);
     if (!employee) return null;
 
     if ((employee as any).isAdmin) {
@@ -173,5 +169,34 @@ export class AuthService {
       name: `${employee.firstName} ${employee.lastName}`.trim(),
       isAdmin: false,
     };
+  }
+
+  private async findEmployeeByPasscode(propertyId: string, passcode: string) {
+    const employees = await prisma.employee.findMany({
+      where: { propertyId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        isAdmin: true,
+        passcodeHash: true,
+      },
+    });
+
+    for (const candidate of employees) {
+      if (verifyPasscode(passcode, candidate.passcodeHash)) {
+        if (isLegacyPasscode(candidate.passcodeHash)) {
+          const upgradedHash = hashPasscode(passcode);
+          await prisma.employee.update({
+            where: { id: candidate.id },
+            data: { passcodeHash: upgradedHash },
+          });
+          return { ...candidate, passcodeHash: upgradedHash };
+        }
+        return candidate;
+      }
+    }
+
+    return null;
   }
 }

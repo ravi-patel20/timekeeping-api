@@ -30,7 +30,7 @@ model MagicLink {
 
 model Employee {
   id             String               @id @default(uuid())
-  passcode       String
+  passcodeHash   String @map("passcode")
   propertyId     String
   isAdmin        Boolean              @default(false)
   email          String?
@@ -44,7 +44,7 @@ model Employee {
   property       Property             @relation(fields: [propertyId], references: [id])
   payHistory     EmployeePayHistory[]
 
-  @@unique([propertyId, passcode])
+  @@index([propertyId])
 }
 
 model ClockLog {

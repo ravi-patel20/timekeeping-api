@@ -1,10 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { hashPasscode, verifyPasscode, validatePasscode } from '../common/passcode.util';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class EmployeesService {
+  private async ensureUniquePasscode(propertyId: string, passcode: string, excludeEmployeeId?: string) {
+    const clashes = await prisma.employee.findMany({
+      where: {
+        propertyId,
+        ...(excludeEmployeeId ? { NOT: { id: excludeEmployeeId } } : {}),
+      },
+      select: { id: true, passcodeHash: true },
+    });
+
+    const conflict = clashes.find((emp) => verifyPasscode(passcode, emp.passcodeHash));
+    if (conflict) {
+      throw new BadRequestException('Passcode already in use. Choose a different 4-digit code.');
+    }
+  }
+
   async listForProperty(propertyId: string) {
     return prisma.employee.findMany({
       where: { propertyId },
@@ -33,6 +49,14 @@ export class EmployeesService {
     status?: string | null;
     payAmountCents?: number | null;
   }) {
+    if (!validatePasscode(data.passcode)) {
+      throw new BadRequestException('Passcode must be exactly 4 digits.');
+    }
+
+    await this.ensureUniquePasscode(propertyId, data.passcode);
+
+    const hashedPasscode = hashPasscode(data.passcode);
+
     const employee = await prisma.$transaction(async (tx) => {
       const initialPayType = data.payType ?? 'hourly';
 
@@ -41,7 +65,7 @@ export class EmployeesService {
           propertyId,
           firstName: data.firstName,
           lastName: data.lastName,
-          passcode: data.passcode,
+          passcodeHash: hashedPasscode,
           email: data.email ?? null,
           phone: data.phone ?? null,
           payType: initialPayType,
@@ -102,6 +126,7 @@ export class EmployeesService {
       payType?: string | null;
       status?: string | null;
       payAmountCents?: number | null;
+      passcode?: string | null;
     },
   ) {
     const existing = await prisma.employee.findFirst({
@@ -119,6 +144,17 @@ export class EmployeesService {
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.phone !== undefined) updateData.phone = data.phone || null;
     if (data.status !== undefined) updateData.status = data.status || existing.status;
+
+    if (data.passcode !== undefined) {
+      if (!data.passcode) {
+        throw new BadRequestException('Passcode cannot be empty.');
+      }
+      if (!validatePasscode(data.passcode)) {
+        throw new BadRequestException('Passcode must be exactly 4 digits.');
+      }
+      await this.ensureUniquePasscode(propertyId, data.passcode, employeeId);
+      updateData.passcodeHash = hashPasscode(data.passcode);
+    }
     let payTypeChanged = false;
     let nextPayType = existing.payType;
     if (data.payType !== undefined) {

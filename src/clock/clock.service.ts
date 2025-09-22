@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaClient, ClockType } from '@prisma/client';
 import { startOfDay } from 'date-fns';
+import { hashPasscode, isLegacyPasscode, verifyPasscode } from '../common/passcode.util';
 
 const prisma = new PrismaClient();
 
@@ -10,12 +11,7 @@ export class ClockService {
     const propertyId = await this.propertyIdFromSession(sessionToken);
     if (!propertyId) return null;
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        propertyId,
-        passcode,
-      },
-    });
+    const employee = await this.findEmployeeByPasscode(propertyId, passcode);
 
     if (!employee) return null;
 
@@ -51,12 +47,7 @@ export class ClockService {
     const propertyId = await this.propertyIdFromSession(sessionToken);
     if (!propertyId) return null;
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        propertyId,
-        passcode,
-      },
-    });
+    const employee = await this.findEmployeeByPasscode(propertyId, passcode);
 
     if (!employee) return null;
 
@@ -83,12 +74,7 @@ export class ClockService {
     const propertyId = await this.propertyIdFromSession(sessionToken);
     if (!propertyId) return null;
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        propertyId,
-        passcode,
-      },
-    });
+    const employee = await this.findEmployeeByPasscode(propertyId, passcode);
 
     if (!employee) return null;
 
@@ -108,12 +94,7 @@ export class ClockService {
     const propertyId = await this.propertyIdFromSession(sessionToken);
     if (!propertyId) return null;
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        propertyId,
-        passcode,
-      },
-    });
+    const employee = await this.findEmployeeByPasscode(propertyId, passcode);
 
     if (!employee) return null;
 
@@ -163,5 +144,31 @@ export class ClockService {
       },
     });
     return session?.propertyId ?? null;
+  }
+
+  private async findEmployeeByPasscode(propertyId: string, passcode: string) {
+    const employees = await prisma.employee.findMany({
+      where: { propertyId },
+      select: {
+        id: true,
+        passcodeHash: true,
+      },
+    });
+
+    for (const candidate of employees) {
+      if (verifyPasscode(passcode, candidate.passcodeHash)) {
+        if (isLegacyPasscode(candidate.passcodeHash)) {
+          const upgradedHash = hashPasscode(passcode);
+          await prisma.employee.update({
+            where: { id: candidate.id },
+            data: { passcodeHash: upgradedHash },
+          });
+          return { ...candidate, passcodeHash: upgradedHash };
+        }
+        return candidate;
+      }
+    }
+
+    return null;
   }
 }

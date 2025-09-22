@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Patch, Param, Req, BadRequestException } f
 import { Request } from 'express';
 import { EmployeesService } from './employees.service';
 import { AdminAuthService } from '../common/admin-auth.service';
+import { validatePasscode } from '../common/passcode.util';
 
 const parsePayAmountToCents = (value: unknown): number | null | undefined => {
   if (value === undefined) return undefined;
@@ -67,6 +68,9 @@ export class EmployeesController {
     if (!passcode) {
       throw new BadRequestException('passcode is required');
     }
+    if (!validatePasscode(passcode)) {
+      throw new BadRequestException('passcode must be exactly 4 digits');
+    }
 
     const employee = await this.employeesService.createForProperty(propertyId, {
       firstName,
@@ -94,6 +98,7 @@ export class EmployeesController {
       payType?: string;
       status?: string;
       payAmount?: number | string | null;
+      passcode?: string;
     },
   ) {
     const deviceToken = req.cookies?.device_session;
@@ -108,6 +113,7 @@ export class EmployeesController {
       payType: body.payType?.trim().toLowerCase(),
       status: body.status?.trim().toLowerCase(),
       payAmountCents: parsePayAmountToCents(body.payAmount),
+      passcode: body.passcode?.trim(),
     };
 
     if (normalized.payType && !['hourly', 'weekly', 'annually'].includes(normalized.payType)) {

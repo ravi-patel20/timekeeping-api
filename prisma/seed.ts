@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPasscode } from '../src/common/passcode.util';
 
 const prisma = new PrismaClient();
 
@@ -13,32 +14,36 @@ async function main() {
     },
   });
 
-  await prisma.employee.upsert({
-    where: { propertyId_passcode: { propertyId: property.id, passcode: '1234' } },
-    update: { name: 'John Doe', isAdmin: true },
-    create: {
-      name: 'John Doe',
-      passcode: '1234',
-      propertyId: property.id,
-      isAdmin: true,
-    },
-  });
+  await prisma.employee.deleteMany({ where: { propertyId: property.id } });
 
-  await prisma.employee.upsert({
-    where: { propertyId_passcode: { propertyId: property.id, passcode: '5678' } },
-    update: { name: 'Jane Smith' },
-    create: {
-      name: 'Jane Smith',
-      passcode: '5678',
-      propertyId: property.id,
-    },
+  await prisma.employee.createMany({
+    data: [
+      {
+        propertyId: property.id,
+        firstName: 'Alice',
+        lastName: 'Manager',
+        passcodeHash: hashPasscode('1234'),
+        isAdmin: true,
+        payType: 'hourly',
+        status: 'active',
+      },
+      {
+        propertyId: property.id,
+        firstName: 'Bob',
+        lastName: 'Worker',
+        passcodeHash: hashPasscode('5678'),
+        isAdmin: false,
+        payType: 'hourly',
+        status: 'active',
+      },
+    ],
   });
 
   console.log('Seeded property and employees successfully.');
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
     process.exit(1);
   })
