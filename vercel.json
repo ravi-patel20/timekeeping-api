@@ -1,0 +1,10 @@
+{
+  "builds": [
+    { "src": "api/index.ts", "use": "@vercel/node" }
+  ],
+  "installCommand": "npm install",
+  "routes": [
+    { "src": "/", "dest": "/api/health" },
+    { "src": "/(.*)", "dest": "/api/$1" }
+  ]
+}
