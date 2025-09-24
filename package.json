@@ -18,7 +18,7 @@
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "^6.16.2",
     "cookie-parser": "^1.4.6",
     "date-fns": "^4.1.0",
     "resend": "^4.7.0"
