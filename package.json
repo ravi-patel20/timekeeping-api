@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
-    "start": "nest start",
+    "start": "node dist/main.js",
     "build": "nest build",
     "dev": "nest start --watch",
     "prisma:generate": "prisma generate",
@@ -11,7 +11,8 @@
     "prisma:reset": "prisma migrate reset",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:tables": "node scripts/listTables.js"
+    "db:tables": "node scripts/listTables.js",
+    "postinstall": "prisma generate"
   },
   
   "dependencies": {
@@ -31,5 +32,8 @@
     "@types/date-fns": "^2.5.3",
     "prisma": "^6.13.0",
     "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
