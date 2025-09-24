@@ -4,7 +4,6 @@
   ],
   "installCommand": "npm install",
   "routes": [
-    { "src": "/", "dest": "/api/health" },
-    { "src": "/(.*)", "dest": "/api/$1" }
+    { "src": "^/$", "dest": "/api/health" }
   ]
 }
