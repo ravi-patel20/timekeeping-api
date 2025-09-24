@@ -1,7 +1,7 @@
 import serverlessExpress from '@vendia/serverless-express';
 import { createApp } from '../src/main';
 
-let cachedHandler: ReturnType<typeof serverlessExpress> | null = null;
+let cached: ReturnType<typeof serverlessExpress> | null = null;
 
 const bootstrap = async () => {
   const app = await createApp();
@@ -10,8 +10,8 @@ const bootstrap = async () => {
 };
 
 export default async function handler(req: any, res: any) {
-  if (!cachedHandler) {
-    cachedHandler = await bootstrap();
+  if (!cached) {
+    cached = await bootstrap();
   }
-  return cachedHandler(req, res);
+  return cached(req, res);
 }
