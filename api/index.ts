@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { INestApplication } from '@nestjs/common';
-import { createApp } from '../dist/main';
+import { createApp } from '../src/main';
 
 let appPromise: Promise<INestApplication> | null = null;
 
@@ -10,7 +10,10 @@ async function getApp(): Promise<INestApplication> {
       const app = await createApp();
       await app.init();
       return app;
-    })();
+    })().catch((error) => {
+      appPromise = null;
+      throw error;
+    });
   }
 
   return appPromise;

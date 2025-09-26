@@ -6,6 +6,7 @@
       "runtime": "nodejs20.x",
       "includeFiles": [
         "dist/**",
+        "node_modules/@prisma/client/**",
         "node_modules/.prisma/client/**"
       ]
     }
