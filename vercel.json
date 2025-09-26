@@ -1,9 +1,6 @@
 {
+  "version": 2,
   "builds": [
-    { "src": "api/index.ts", "use": "@vercel/node" }
-  ],
-  "installCommand": "npm install",
-  "routes": [
-    { "src": "^/$", "dest": "/api/health" }
+    { "src": "src/main.ts", "use": "@vercel/node" }
   ]
 }

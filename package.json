@@ -14,23 +14,23 @@
     "db:tables": "node scripts/listTables.js",
     "postinstall": "prisma generate"
   },
+  
   "dependencies": {
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
-    "@prisma/client": "^6.16.2",
-    "@vercel/node": "^5.3.24",
-    "cookie-parser": "^1.4.6",
+    "@prisma/client": "^6.13.0",
     "date-fns": "^4.1.0",
-    "resend": "^4.7.0"
+    "resend": "^4.7.0",
+    "cookie-parser": "^1.4.6"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.10",
-    "@types/cookie-parser": "^1.4.7",
-    "@types/date-fns": "^2.5.3",
-    "@types/express": "^4.17.21",
-    "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
+    "@types/express": "^4.17.21",
+    "@types/cookie-parser": "^1.4.7",
+    "@nestjs/cli": "^11.0.10",
+    "@types/date-fns": "^2.5.3",
+    "prisma": "^6.13.0",
     "typescript": "^5.0.0"
   },
   "engines": {
