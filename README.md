@@ -17,7 +17,12 @@
    npx tsx prisma/seed.ts
    ```
 
-4. Start the dev server:
+4. Onboard a new property + admin via the guided CLI:
+   ```
+   npm run onboard:property
+   ```
+
+5. Start the dev server:
    ```
    npm run start
    ```
@@ -26,8 +31,8 @@
 
 - Property ID: `ABC123`
 - Property Email: `property@example.com`
-- Employee 1: John Doe, Passcode: `1234`, isAdmin: `true`
-- Employee 2: Jane Smith, Passcode: `5678`
+- Admin: Alice Manager, Passcode: `1234`, isAdmin: `true`
+- Employee: Bob Worker, Passcode: `5678`
 
 ## Endpoints
 

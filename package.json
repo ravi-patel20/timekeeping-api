@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:tables": "node scripts/listTables.js",
+    "onboard:property": "ts-node --transpile-only scripts/onboardProperty.ts",
     "postinstall": "prisma generate"
   },
   
