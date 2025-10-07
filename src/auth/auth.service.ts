@@ -145,6 +145,10 @@ export class AuthService {
     const employee = await this.findEmployeeByPasscode(session.propertyId, passcode);
     if (!employee) return null;
 
+    const baseModules = ['employee-dashboard'];
+    const adminModules = ['employee-dashboard', 'timekeeping', 'tasks', 'reports', 'team', 'settings'];
+    const accessibleModules = (employee as any).isAdmin ? adminModules : baseModules;
+
     if ((employee as any).isAdmin) {
       // Create admin session to avoid repeatedly sending passcode
       const admin = await prisma.adminSession.create({
@@ -159,6 +163,7 @@ export class AuthService {
         employeeId: employee.id,
         name: `${employee.firstName} ${employee.lastName}`.trim(),
         isAdmin: true,
+        accessibleModules,
         adminToken: admin.token,
         adminExpiresAt: admin.expiresAt,
       };
@@ -168,6 +173,7 @@ export class AuthService {
       employeeId: employee.id,
       name: `${employee.firstName} ${employee.lastName}`.trim(),
       isAdmin: false,
+      accessibleModules,
     };
   }
 
