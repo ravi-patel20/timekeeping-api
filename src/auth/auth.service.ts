@@ -146,7 +146,14 @@ export class AuthService {
     if (!employee) return null;
 
     const baseModules = ['employee-dashboard'];
-    const adminModules = ['employee-dashboard', 'timekeeping', 'tasks', 'reports', 'team', 'settings'];
+    const adminModules = [
+      'employee-dashboard',
+      'timekeeping',
+      // 'tasks',
+      // 'reports',
+      // 'team',
+      // 'settings'
+    ];
     const accessibleModules = (employee as any).isAdmin ? adminModules : baseModules;
 
     if ((employee as any).isAdmin) {
