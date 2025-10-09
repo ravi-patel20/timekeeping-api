@@ -30,6 +30,7 @@ model Property {
   employees                Employee[]    @relation("PropertyEmployees")
   primaryContact           Employee?     @relation("PropertyPrimaryContact", fields: [primaryContactEmployeeId], references: [id], onDelete: SetNull)
   magicLinks               MagicLink[]
+  modules                  PropertyModule[]
 
   @@index([primaryContactEmployeeId])
 }
@@ -61,6 +62,7 @@ model Employee {
   property          Property             @relation("PropertyEmployees", fields: [propertyId], references: [id])
   payHistory        EmployeePayHistory[]
   primaryContactFor Property[]           @relation("PropertyPrimaryContact")
+  modules           EmployeeModule[]
 
   @@index([propertyId])
 }
@@ -101,6 +103,26 @@ model AdminSession {
   employeeId String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
+}
+
+model PropertyModule {
+  id         String    @id @default(uuid())
+  propertyId String
+  moduleKey  String
+  createdAt  DateTime  @default(now())
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, moduleKey])
+}
+
+model EmployeeModule {
+  id         String    @id @default(uuid())
+  employeeId String
+  moduleKey  String
+  createdAt  DateTime  @default(now())
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, moduleKey])
 }
 
 enum ClockType {

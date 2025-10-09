@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { ensureBaseModules, normalizeModuleKeys } from '../constants/modules';
 
 const prisma = new PrismaClient();
 
@@ -23,6 +24,7 @@ export interface EmployeeHoursSummary {
   payAmountCents: number | null;
   status: string;
   payHistory: EmployeePayHistoryEntry[];
+  modules: string[];
 }
 
 export interface EmployeePayHistoryEntry {
@@ -121,6 +123,9 @@ export class ReportsService {
           },
           orderBy: { effectiveAt: 'desc' },
         },
+        modules: {
+          select: { moduleKey: true },
+        },
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
@@ -144,6 +149,7 @@ export class ReportsService {
         payAmountCents: e.payAmountCents ?? null,
         status: e.status,
         payHistory: e.payHistory,
+        modules: ensureBaseModules(normalizeModuleKeys(e.modules.map((m) => m.moduleKey))),
       });
     }
     return results;

@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { hashPasscode, isLegacyPasscode, verifyPasscode } from '../common/passcode.util';
 import { buildMagicLinkEmail } from './templates/magic-link-email';
+import { ALL_MODULE_KEYS, ensureBaseModules, normalizeModuleKeys } from '../constants/modules';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const prisma = new PrismaClient();
@@ -145,16 +146,28 @@ export class AuthService {
     const employee = await this.findEmployeeByPasscode(session.propertyId, passcode);
     if (!employee) return null;
 
-    const baseModules = ['employee-dashboard'];
-    const adminModules = [
-      'employee-dashboard',
-      'timekeeping',
-      // 'tasks',
-      // 'reports',
-      // 'team',
-      // 'settings'
-    ];
-    const accessibleModules = (employee as any).isAdmin ? adminModules : baseModules;
+    const propertyModuleRecords = await prisma.propertyModule.findMany({
+      where: { propertyId: session.propertyId },
+      select: { moduleKey: true },
+    });
+    const propertyModules = normalizeModuleKeys(propertyModuleRecords.map((m) => m.moduleKey));
+    const effectivePropertyModules =
+      propertyModules.length > 0
+        ? ensureBaseModules(propertyModules)
+        : ensureBaseModules(ALL_MODULE_KEYS);
+
+    const employeeModuleRecords = await prisma.employeeModule.findMany({
+      where: { employeeId: employee.id },
+      select: { moduleKey: true },
+    });
+    const employeeModules = normalizeModuleKeys(employeeModuleRecords.map((m) => m.moduleKey));
+    const filteredEmployeeModules = employeeModules.filter((key) =>
+      effectivePropertyModules.includes(key),
+    );
+
+    const accessibleModules = (employee as any).isAdmin
+      ? effectivePropertyModules
+      : ensureBaseModules(filteredEmployeeModules);
 
     if ((employee as any).isAdmin) {
       // Create admin session to avoid repeatedly sending passcode

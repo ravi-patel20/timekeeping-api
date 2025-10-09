@@ -1,5 +1,6 @@
 import { PrismaClient, PropertyType } from '@prisma/client';
 import { hashPasscode } from '../src/common/passcode.util';
+import { ALL_MODULE_KEYS, ensureBaseModules } from '../src/constants/modules';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
@@ -119,6 +120,43 @@ async function main() {
       value.length < 4 ? 'Passcode should be at least 4 characters.' : null,
   });
 
+  console.log('');
+  console.log('📦 Workspace modules');
+  console.log('Available modules:');
+  ALL_MODULE_KEYS.forEach((moduleKey, index) => {
+    console.log(`  ${index + 1}. ${moduleKey}`);
+  });
+
+  const moduleSelectionRaw = await prompt(
+    'Select modules to enable (comma-separated numbers, blank for all)',
+  );
+
+  const selectedModuleKeys = (() => {
+    const trimmed = moduleSelectionRaw.trim();
+    if (!trimmed) {
+      return ensureBaseModules(ALL_MODULE_KEYS);
+    }
+    const parts = trimmed.split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return ensureBaseModules(ALL_MODULE_KEYS);
+    }
+
+    const resolved = new Set<string>();
+    for (const part of parts) {
+      const parsed = Number(part);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > ALL_MODULE_KEYS.length) {
+        console.log(`  › "${part}" is not a valid option. Defaulting to all modules.`);
+        return ensureBaseModules(ALL_MODULE_KEYS);
+      }
+      resolved.add(ALL_MODULE_KEYS[parsed - 1]);
+    }
+
+    return ensureBaseModules(Array.from(resolved));
+  })();
+
   const property = await prisma.property.create({
     data: {
       code,
@@ -139,6 +177,16 @@ async function main() {
     },
   });
 
+  if (selectedModuleKeys.length > 0) {
+    await prisma.propertyModule.createMany({
+      data: selectedModuleKeys.map((moduleKey) => ({
+        propertyId: property.id,
+        moduleKey,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   const admin = await prisma.employee.create({
     data: {
       propertyId: property.id,
@@ -158,10 +206,21 @@ async function main() {
     data: { primaryContactEmployeeId: admin.id },
   });
 
+  if (selectedModuleKeys.length > 0) {
+    await prisma.employeeModule.createMany({
+      data: selectedModuleKeys.map((moduleKey) => ({
+        employeeId: admin.id,
+        moduleKey,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   console.log('');
   console.log('✅ Onboarding complete.');
   console.log(`   Property: ${property.name} (code ${property.code})`);
   console.log(`   Admin: ${admin.firstName} ${admin.lastName} <${admin.email}>`);
+  console.log(`   Modules enabled: ${selectedModuleKeys.join(', ')}`);
   console.log('');
 }
 

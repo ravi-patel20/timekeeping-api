@@ -13,6 +13,7 @@
     "prisma:studio": "prisma studio",
     "db:tables": "node scripts/listTables.js",
     "onboard:property": "ts-node --transpile-only scripts/onboardProperty.ts",
+    "modules:backfill": "ts-node --transpile-only scripts/backfillModuleAccess.ts",
     "postinstall": "prisma generate"
   },
   

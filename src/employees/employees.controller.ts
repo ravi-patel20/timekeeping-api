@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Patch, Param, Req, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Put, Param, Req, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { EmployeesService } from './employees.service';
 import { AdminAuthService } from '../common/admin-auth.service';
@@ -52,6 +52,7 @@ export class EmployeesController {
       payType?: string;
       status?: string;
       payAmount?: number | string | null;
+      modules?: unknown;
     },
   ) {
     const deviceToken = req.cookies?.device_session;
@@ -72,6 +73,10 @@ export class EmployeesController {
       throw new BadRequestException('passcode must be exactly 4 digits');
     }
 
+    const modules = Array.isArray(body.modules)
+      ? body.modules.filter((value): value is string => typeof value === 'string')
+      : undefined;
+
     const employee = await this.employeesService.createForProperty(propertyId, {
       firstName,
       lastName,
@@ -81,6 +86,7 @@ export class EmployeesController {
       payType: body.payType?.trim().toLowerCase() || null,
       status: body.status?.trim().toLowerCase() || null,
       payAmountCents: parsePayAmountToCents(body.payAmount),
+      modules,
     });
 
     return employee;
@@ -99,11 +105,18 @@ export class EmployeesController {
       status?: string;
       payAmount?: number | string | null;
       passcode?: string;
+      modules?: unknown;
     },
   ) {
     const deviceToken = req.cookies?.device_session;
     const adminToken = req.cookies?.admin_session;
     const { propertyId } = await this.adminAuth.requireAdmin(deviceToken, adminToken);
+
+    const modules = Array.isArray(body.modules)
+      ? body.modules.filter((value): value is string => typeof value === 'string')
+      : body.modules === null
+        ? []
+        : undefined;
 
     const normalized = {
       firstName: body.firstName?.trim(),
@@ -114,6 +127,7 @@ export class EmployeesController {
       status: body.status?.trim().toLowerCase(),
       payAmountCents: parsePayAmountToCents(body.payAmount),
       passcode: body.passcode?.trim(),
+      modules,
     };
 
     if (normalized.payType && !['hourly', 'weekly', 'annually'].includes(normalized.payType)) {
@@ -131,5 +145,35 @@ export class EmployeesController {
     }
 
     return this.employeesService.updateForProperty(propertyId, employeeId, normalized);
+  }
+
+  @Get('modules')
+  async getModules(@Req() req: Request) {
+    const deviceToken = req.cookies?.device_session;
+    const adminToken = req.cookies?.admin_session;
+    const { propertyId } = await this.adminAuth.requireAdmin(deviceToken, adminToken);
+    return this.employeesService.getPropertyModules(propertyId);
+  }
+
+  @Put('modules')
+  async setModules(
+    @Req() req: Request,
+    @Body() body: { modules?: unknown },
+  ) {
+    const deviceToken = req.cookies?.device_session;
+    const adminToken = req.cookies?.admin_session;
+    const { propertyId } = await this.adminAuth.requireAdmin(deviceToken, adminToken);
+
+    const modules = Array.isArray(body.modules)
+      ? body.modules.filter((value): value is string => typeof value === 'string')
+      : body.modules === null
+        ? []
+        : undefined;
+
+    if (!modules) {
+      throw new BadRequestException('modules must be an array or null to reset');
+    }
+
+    return this.employeesService.updatePropertyModules(propertyId, modules);
   }
 }
